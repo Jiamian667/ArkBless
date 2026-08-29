@@ -4,3 +4,4 @@ sentence-transformers
 huggingface_hub
 chromadb
 pysqlite3-binary
+openai
