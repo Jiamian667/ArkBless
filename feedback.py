@@ -24,7 +24,7 @@ def save_feedback(query, meta, feedback_type, all_op_names=None):
 
 def save_supplement_feedback(query, op_name, trait, source, pass_box):
     """发送补充档案到机器人"""
-    content = f"""【新增干员档案补充】
+    content = f"""【新增干员玄学档案补充】
 🔍 原搜索词：{query}
 👤 提交干员：{op_name}
 ✨ 特殊才能：{trait}
