@@ -1,4 +1,4 @@
-# 前端网页的子网页，设计
+# style.py
 import base64
 
 def get_base64_image(image_path):
@@ -11,16 +11,13 @@ def get_base64_image(image_path):
 def get_custom_css(has_searched, bg_b64):
     """根据状态动态生成 CSS"""
     
-    # 根据是否搜索生成规则
+    # 1. 动态 CSS 部分（包含 Python 变量的动态样式）
     overflow_rule = "overflow-y: auto !important;" if has_searched else "overflow: hidden !important; height: 100vh !important;"
-    
-    # 根据背景图生成规则
     bg_style_rule = (
         f'background-image: url("data:image/jpeg;base64,{bg_b64}");'
         if bg_b64 else "background-color: #121212;"
     )
 
-    # 1. 动态 CSS 部分
     dynamic_css = f"""
     html, body, .stApp {{
         {overflow_rule}
@@ -35,7 +32,7 @@ def get_custom_css(has_searched, bg_b64):
     }}
     """
 
-    # 2. 静态 CSS 部分
+    # 2. 静态 CSS 部分（包含页面排版与鸿蒙弹性适配）
     static_css = """
     /* 隐藏 Streamlit 默认 Header 与 页脚 */
     header, [data-testid="stHeader"], footer {
@@ -107,7 +104,7 @@ def get_custom_css(has_searched, bg_b64):
     .screen1-container {
         position: relative;
         width: 100%;
-        height: 100vh;
+        min-height: 85vh;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -151,39 +148,47 @@ def get_custom_css(has_searched, bg_b64):
         opacity: 0.9;
     }
 
-    /* 仅针对“寻访”搜索表单应用右下角绝对定位，避免影响其他表单 */
-    [data-testid="stForm"]:has(input[aria-label="需求"]) {
-        position: absolute !important;
-        top: calc(100vh - 95px) !important;
-        right: 0px !important;
-        left: auto !important;
-        bottom: auto !important;
-        z-index: 10 !important;
-        width: 380px !important;
-        max-width: calc(100vw - 60px) !important;
-        background: transparent !important;
-        border: none !important;
-        padding: 0 !important;
-        pointer-events: none !important;
+    /* ================= 弹性适配：搜索表单 ================= */
+    [data-testid="stForm"] {
+        position: relative;
+        z-index: 10;
     }
 
-    [data-testid="stForm"]:has(input[aria-label="需求"]) input,
-    [data-testid="stForm"]:has(input[aria-label="需求"]) button {
-        pointer-events: auto !important;
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-        border: 1px solid #FFFFFF !important;
-        font-weight: bold !important;
-        transition: all 0.2s ease;
-    }
-    
-    [data-testid="stForm"]:has(input[aria-label="需求"]) button:hover {
-        background-color: #E0E0E0 !important;
-        color: #000000 !important;
-        border-color: #E0E0E0 !important;
+    /* 现代特性检查：支持高级选择器的浏览器才吸附在右下角，鸿蒙老系统自动降级回普通表单 */
+    @supports selector(:has(*)) {
+        [data-testid="stForm"]:has(input[aria-label="需求"]) {
+            position: absolute !important;
+            top: calc(100vh - 95px) !important;
+            right: 0px !important;
+            left: auto !important;
+            bottom: auto !important;
+            z-index: 10 !important;
+            width: 380px !important;
+            max-width: calc(100vw - 60px) !important;
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            pointer-events: none !important;
+        }
+
+        [data-testid="stForm"]:has(input[aria-label="需求"]) input,
+        [data-testid="stForm"]:has(input[aria-label="需求"]) button {
+            pointer-events: auto !important;
+            background-color: #FFFFFF !important;
+            color: #000000 !important;
+            border: 1px solid #FFFFFF !important;
+            font-weight: bold !important;
+            transition: all 0.2s ease;
+        }
+        
+        [data-testid="stForm"]:has(input[aria-label="需求"]) button:hover {
+            background-color: #E0E0E0 !important;
+            color: #000000 !important;
+            border-color: #E0E0E0 !important;
+        }
     }
 
-    /* ================= Screen 2 (重构后的深灰直角卡片容器) ================= */
+    /* ================= Screen 2 (档案面板样式) ================= */
     #results-anchor {
         padding-top: 60px;
         margin-bottom: 20px;
@@ -239,7 +244,7 @@ def get_custom_css(has_searched, bg_b64):
         font-weight: bold;
     }
 
-    /* ================= 右上角反馈按钮样式定制 ================= */
+    /* ================= 按钮样式定制 ================= */
     div[data-testid="stButton"] > button {
         border-radius: 0px !important;
         font-weight: bold !important;
@@ -266,7 +271,6 @@ def get_custom_css(has_searched, bg_b64):
         border-color: #888888 !important;
     }
 
-    /* 特殊定制：橙色“点击这里”纯文字按钮 */
     button[aria-label="点击这里"] {
         background: transparent !important;
         color: #FF8C00 !important;
@@ -286,12 +290,13 @@ def get_custom_css(has_searched, bg_b64):
         background: transparent !important;
     }
 
+    /* ================= 移动端弹性布局 ================= */
     @media (max-width: 768px) {
         .main-title { font-size: 2.5rem; }
         .sub-title { font-size: 1.3rem; }
         .screen1-container {
             height: auto;
-            min-height: 100vh;
+            min-height: 85vh;
             padding-bottom: 20px;
         }
         .bottom-left-box {
@@ -299,10 +304,17 @@ def get_custom_css(has_searched, bg_b64):
             text-align: center;
             margin-top: 2rem;
         }
-        [data-testid="stForm"]:has(input[aria-label="需求"]) {
+        [data-testid="stForm"] {
             position: static !important;
             width: 100% !important;
             margin-top: 1rem;
+            pointer-events: auto !important;
+            background: rgba(25, 25, 25, 0.85) !important;
+            padding: 15px !important;
+            border: 1px solid #3d3d3d !important;
+        }
+        [data-testid="stForm"] input, [data-testid="stForm"] button {
+            pointer-events: auto !important;
         }
     }
     """
