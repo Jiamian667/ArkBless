@@ -40,11 +40,10 @@ if not st.session_state["intro_seen"]:
     st.markdown("""
     <div class="intro-box">
         <div class="intro-title">明日方舟通行证玄学查询终端</div>
-        <div class="intro-text-line">致力于帮助解决“挂哪个干员的通行证”问题</div>
         <div class="intro-text-line">首次打开需要1-2分钟与prts建立链接</div>
         <div class="intro-text-line">输入愿望，搜索相近干员或搜索干员名称获取通行证分盒信息</div>
-        <div class="intro-text-line">玄学查询仅供讨个彩头，无真实含义</div>
-        <div class="intro-text-line">暂不支持如“克上司老板”等负面词条</div>
+        <div class="intro-text-line">逻辑本质是近义词搜索，无法理解长难句请见谅</div>
+        <div class="intro-text-line">现包含档案，语音及密录信息，其余剧情待完善</div>
         <div class="intro-text-line">通行证分盒信息暂不完整</div>
         <div class="intro-text-line">如果搜索结果不匹配，可点击右上角反馈</div>
         <div class="intro-text-line">如果愿意帮助完善信息，可在查询结果页面填写补充信息</div>
