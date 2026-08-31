@@ -35,18 +35,23 @@ def save_supplement_feedback(query, op_name, trait, source, pass_box):
     _send_to_bot(content)
 
 def _send_to_bot(text_content):
-    """内部通用发送请求方法（以飞书机器人为例）"""
+    """钉钉机器人专用发送方法"""
     if not WEBHOOK_URL or not WEBHOOK_URL.startswith("http"):
         print("Webhook URL 未配置或格式错误，跳过发送")
         return
         
+    # 钉钉 API 规定的格式
     payload = {
-        "msg_type": "text",
-        "content": {
-            "text": text_content
+        "msgtype": "text",
+        "text": {
+            "content": text_content
         }
     }
+    
     try:
-        requests.post(WEBHOOK_URL, json=payload, timeout=5)
+        # 发送 POST 请求
+        response = requests.post(WEBHOOK_URL, json=payload, timeout=5)
+        # 将钉钉服务器的返回结果打印在终端里，方便排错
+        print(f"钉钉推送结果: {response.text}")
     except Exception as e:
-        print(f"反馈发送失败: {e}")
+        print(f"推送过程发生网络错误: {e}")
