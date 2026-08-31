@@ -1,53 +1,52 @@
 # feedback.py
-import json
-import os
 import datetime
+import requests
+import streamlit as st
 
-FEEDBACK_FILE = "feedback.json"
+try:
+    WEBHOOK_URL = st.secrets["WEBHOOK_URL"]
+except KeyError:
+    # 作为一个保险，如果没配密钥就置空，防止程序崩溃
+    WEBHOOK_URL = ""
 
 def save_feedback(query, meta, feedback_type, all_op_names=None):
-    """保存搜索词、本次搜索结果及对错反馈到 JSON 文件中"""
-    record = {
-        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "type": "match_feedback",
-        "search_query": query,
-        "feedback_item": {
-            "operator_name": meta.get("operator_name", "未知"),
-            "trait_tag": meta.get("trait_tag", ""),
-            "trait_content": meta.get("trait_content", ""),
-            "source_type": meta.get("source_type", ""),
-        },
-        "feedback": feedback_type,
-        "all_returned_operators": all_op_names or []
-    }
-    _write_to_json(record)
+    """发送匹配反馈到机器人"""
+    fb_text = "✅ 准确" if feedback_type == "correct" else "❌ 不准确"
+    
+    content = f"""【玄学匹配反馈】
+🔍 搜索词：{query}
+👤 匹配干员：{meta.get("operator_name", "未知")}
+🏷️ 标签：{meta.get("trait_tag", "")}
+💡 用户评价：{fb_text}
+🕒 时间：{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}"""
+
+    _send_to_bot(content)
 
 def save_supplement_feedback(query, op_name, trait, source, pass_box):
-    """保存用户主动补充的干员档案数据"""
-    record = {
-        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "type": "supplement_archive",
-        "search_query": query,
-        "supplement_data": {
-            "operator_name": op_name,
-            "special_talent": trait,
-            "source": source or "未知",
-            "pass_box": pass_box or "未提供"
+    """发送补充档案到机器人"""
+    content = f"""【新增干员档案补充】
+🔍 原搜索词：{query}
+👤 提交干员：{op_name}
+✨ 特殊才能：{trait}
+📚 出处：{source or "未提供"}
+📦 分盒：{pass_box or "未提供"}
+🕒 时间：{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}"""
+
+    _send_to_bot(content)
+
+def _send_to_bot(text_content):
+    """内部通用发送请求方法（以飞书机器人为例）"""
+    if not WEBHOOK_URL or not WEBHOOK_URL.startswith("http"):
+        print("Webhook URL 未配置或格式错误，跳过发送")
+        return
+        
+    payload = {
+        "msg_type": "text",
+        "content": {
+            "text": text_content
         }
     }
-    _write_to_json(record)
-
-def _write_to_json(record):
-    """内部通用写入 JSON 方法"""
-    existing_data = []
-    if os.path.exists(FEEDBACK_FILE):
-        try:
-            with open(FEEDBACK_FILE, "r", encoding="utf-8") as f:
-                existing_data = json.load(f)
-        except Exception:
-            existing_data = []
-            
-    existing_data.append(record)
-    
-    with open(FEEDBACK_FILE, "w", encoding="utf-8") as f:
-        json.dump(existing_data, f, ensure_ascii=False, indent=4)
+    try:
+        requests.post(WEBHOOK_URL, json=payload, timeout=5)
+    except Exception as e:
+        print(f"反馈发送失败: {e}")

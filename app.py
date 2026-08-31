@@ -7,6 +7,7 @@ import json
 from db import load_database
 from feedback import save_feedback, save_supplement_feedback
 from style import get_base64_image, get_custom_css
+from config import OPERATOR_NAMES
 
 # ================= 1. 页面配置 =================
 st.set_page_config(
@@ -119,33 +120,57 @@ if query:
         except Exception:
             exact_results = {"metadatas": []}
 
-        # ----------------- 渲染：精确匹配到干员名字 -----------------
-        if exact_results and exact_results.get("metadatas") and len(exact_results["metadatas"]) > 0:
-            st.markdown("<h2 class='glow-text' style='margin-bottom: 20px;'>干员档案查询</h2>", unsafe_allow_html=True)
+        # ================== 核心分流逻辑 ==================
+        
+        # 分支 A：只要输入的名字在 OPERATOR_NAMES 列表中，就严格判定为干员名字查询
+        if query in OPERATOR_NAMES:
+            # 尝试从向量数据库中获取该干员的所有记录
+            results = collection.get(where={"operator_name": query})
+            metadatas = results.get("metadatas", [])
             
-            op_metas = exact_results["metadatas"]
-            op_name = op_metas[0].get("operator_name", query)
+            # 无论有没有词条，都先展示干员专属档案标题
+            st.markdown(f"<h2 class='glow-text' style='margin-bottom: 25px;'>【{query}】 档案详情</h2>", unsafe_allow_html=True)
             
-            # 提取分盒信息
-            try: pass_info = json.loads(op_metas[0].get("pass_info", "[]"))
-            except Exception: pass_info = op_metas[0].get("pass_info", "暂无分盒信息")
-            pass_info_str = ", ".join([str(p) for p in pass_info]) if isinstance(pass_info, list) and pass_info else str(pass_info)
-            
-            with st.container(border=True):
-                st.markdown(f"<div class='op-name' style='color:#FF8C00 !important; font-size: 2.2rem;'>{op_name}</div>", unsafe_allow_html=True)
-                st.markdown(f"<div class='op-info' style='font-size: 1.1rem; margin-bottom: 18px;'><b>所属通行证分盒：</b>{pass_info_str}</div>", unsafe_allow_html=True)
+            # 情况 1：数据库中有该干员的玄学词条
+            if metadatas:
+                # 1. 提取分盒信息
+                meta_first = metadatas[0]
+                try: 
+                    pass_info = json.loads(meta_first.get("pass_info", "[]"))
+                except Exception: 
+                    pass_info = meta_first.get("pass_info", "暂无分盒信息")
                 
-                # 遍历显示所有该干员的词条/档案
-                for meta in op_metas:
-                    st.markdown(f"""
-                    <div class="op-content" style="margin-bottom: 10px;">
-                        <span style="color: #FF8C00; font-weight: bold; margin-right: 5px;">[{meta.get('trait_tag', '档案')}]</span> 
-                        {meta.get('trait_content', '')}
-                        <div class='op-info' style='margin-top: 6px;'><b>出处：</b>{meta.get('source_type', '档案')}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-        # ----------------- 渲染：未匹配到干员名字，进行愿望招募展示 -----------------
+                pass_info_str = ", ".join([str(p) for p in pass_info]) if isinstance(pass_info, list) and pass_info else str(pass_info)
+                
+                # 2. 渲染分盒总结卡片
+                st.markdown(f"""
+                <div style="background: rgba(26, 26, 26, 0.92); border: 1px solid #3d3d3d; border-left: 4px solid #FF8C00; padding: 18px; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.8);">
+                    <div style="font-size: 1.3rem; color: #FFFFFF; font-weight: bold; margin-bottom: 8px;">通行证分盒信息</div>
+                    <div style="font-size: 1.1rem; color: #E0E0E0;">{pass_info_str}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # 3. 渲染收录的玄学标签
+                st.markdown("<h3 style='color: #CCCCCC; margin-bottom: 20px; font-size: 1.2rem;'>收录的玄学标签</h3>", unsafe_allow_html=True)
+                cols = st.columns(3, gap="medium")
+                for i, meta in enumerate(metadatas):
+                    with cols[i % 3]:
+                        with st.container(border=True):
+                            card_body_html = f"""
+                            <div class="op-tag">{meta.get('trait_tag', '未分类')}</div>
+                            <div class="op-content">{meta.get('trait_content', '')}</div>
+                            <div class="op-info"><b>出处：</b>{meta.get('source_type', '档案')}</div>
+                            """
+                            st.markdown(card_body_html, unsafe_allow_html=True)
+
+            # 情况 2：名字在干员名单里，但数据库中还没有收录其玄学词条
+            else:
+                st.warning(f"【{query}】已确认属于罗德岛干员，但目前档案库中暂未收录其玄学词条与分盒数据。")
+                # 自动开启补充表单，引导用户直接提交
+                st.session_state["show_supplement_form"] = True
+
+        # 分支 B：非干员名字，走愿望/需求向量搜索逻辑
+       
         else:
             # 只有搜愿望时才进行向量匹配查询，节省资源
             results = collection.query(query_texts=[query], n_results=15)
