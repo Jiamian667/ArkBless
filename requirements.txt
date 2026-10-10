@@ -3,3 +3,4 @@ huggingface_hub
 openai
 pandas
 streamlit
+sentence-transformers
